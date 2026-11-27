@@ -1,8 +1,29 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using ClothingPriceTracker.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using ClothingPriceTracker.Api.Services;
+using ClothingPriceTracker.Api.Services.Abstractions;
+using ClothingPriceTracker.Api.Services.Scrapers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient<MaviStoreScraper>();
+builder.Services.AddScoped<IStoreScraper>(sp => sp.GetRequiredService<MaviStoreScraper>());
+builder.Services.AddScoped<IStoreScraper, BershkaStoreScraper>();
+builder.Services.AddHttpClient<LcwStoreScraper>();
+builder.Services.AddScoped<IStoreScraper>(sp => sp.GetRequiredService<LcwStoreScraper>());
+builder.Services.AddScoped<ProductScraperManager>();
+builder.Services.AddHttpClient<EmbeddingRecommendationService>();
+
+// Fiyat geçmişi veritabanı (SQLite). PostgreSQL'e geçmek için sadece bu satır (UseNpgsql) değişir.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=pricetracker.db"));
+builder.Services.AddScoped<PriceHistoryService>();
+
+// Arka planda periyodik çalışan otomatik fiyat güncelleme servisi
+builder.Services.AddHostedService<PriceTrackerBackgroundService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -18,6 +39,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Veritabanı ve tablolar yoksa otomatik oluştur
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
+}
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

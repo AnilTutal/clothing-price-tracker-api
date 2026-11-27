@@ -1,4 +1,4 @@
-﻿# ⚙️ Clothing Price Tracker API (.NET 8 Web API)
+# ⚙️ Clothing Price Tracker API (.NET 8 Web API)
 
 Farklı mağazalardaki kıyafet fiyatlarını karşılaştırmayı sağlayan platformumuzun **C# (.NET 8 Web API + Swagger)** tabanlı Backend projesi.
 
@@ -15,9 +15,12 @@ git checkout kendi_isminiz
 dotnet run --project ClothingPriceTracker.Api
 ```
 
-## 📂 Klasör Düzeni
-- `Controllers/` 👉 API uçlarının (endpoint'lerin) bulunduğu klasör (Örn: `ProductsController.cs`)
-- `Models/` 👉 Kıyafet, Mağaza, Fiyat sınıflarının (Entity / DTO) bulunduğu klasör
-- `Services/` 👉 İş mantığı ve fiyat karşılaştırma servislerinin bulunduğu klasör
+## 📂 Klasör Düzeni ve Ortak Scraper Mimarisi
+- `Controllers/ProductsController.cs` 👉 Ürün listeleme (`/api/products`), ortak linkten ürün çekme (`/api/products/scrape`) ve tekil ürün detayı (`/api/products/{id}`) uçları
+- `Models/ClothingItem.cs` 👉 Ortak kıyafet (`ClothingItem`) ve mağaza fiyat teklifi (`ClothingOffer`) modelleri
+- `Services/Abstractions/IStoreScraper.cs` 👉 Tüm mağaza adaptörlerinin (Mavi, Bershka vb.) uyduğu ortak sözleşme (Interface)
+- `Services/Scrapers/MaviStoreScraper.cs` 👉 Mavi canlı ürün çekme ve arama adaptörü
+- `Services/Scrapers/BershkaStoreScraper.cs` 👉 Bershka ürün çekme, URL çözümleyici ve katalog adaptörü
+- `Services/ProductScraperManager.cs` 👉 Gelen URL'nin hangi mağazaya ait olduğunu otomatik tanıyan ve çoklu mağaza aramalarını paralel (`Task.WhenAll`) birleştiren ortak yönetici servis
 - `Data/` 👉 PostgreSQL (`DbContext`) veritabanı bağlantısının yer alacağı klasör
-- `Program.cs` 👉 Swagger, CORS ve uygulama başlatma ayarları
+- `Program.cs` 👉 Dependency Injection (`IStoreScraper`), Swagger, CORS ve uygulama başlatma ayarları
